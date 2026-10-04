@@ -27,9 +27,11 @@ function launchLayer(posters) {
     vars: `var LAUNCH = 0, LAUNCH_RATE = 0, LAUNCH_T0 = 0, LAUNCH_SENT = false;
 var A0 = RING.a, D0 = RING.dist, T0 = RING.tile, HEAD_ALPHA = 1, HEAD_SCALE = 1, SHATTER = 0, FLASH = 0;
 function ease(t){ t = Math.max(0, Math.min(1, t)); return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
+/* the whirl answers the click at once and settles into full speed */
+function easeOut(t){ t = Math.max(0, Math.min(1, t)); return 1 - Math.pow(1 - t, 3); }
 function launchStep(now){
   var lt = (now - LAUNCH_T0) / 1000;
-  LAUNCH_RATE = 1 + 29 * ease(lt / 1.6);
+  LAUNCH_RATE = 1 + 29 * easeOut(lt / 1.6);
   var k = ease((lt - 1.2) / 1.2);
   RING.dist = D0 * (1 - 0.6 * k);
   RING.a = A0 * (1 + 0.9 * k);
@@ -91,13 +93,19 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key
     im.onload = function(){
       var W = 240, H = 360;
       var f = mkc(W, H), x = f.getContext('2d');
+      /* round the corners once here, so drawing a poster each frame is a
+         plain drawImage instead of a clip (clips are slow on a 2D canvas) */
+      x.save(); x.translate(W / 2, H / 2); roundRectPath(x, W, H, W * 0.07); x.restore();
+      x.clip();
       var s = Math.max(W / im.width, H / im.height);
       x.drawImage(im, (W - im.width * s) / 2, (H - im.height * s) / 2, im.width * s, im.height * s);
       x.fillStyle = 'rgba(0,0,0,0.14)';
       for (var k = 0; k < H; k += 3) x.fillRect(0, k, W, 1);
       var b = mkc(W, H), y = b.getContext('2d');
       y.drawImage(f, 0, 0);
+      y.globalCompositeOperation = 'source-atop';
       y.fillStyle = 'rgba(6,6,14,0.6)'; y.fillRect(0, 0, W, H);
+      f.rounded = b.rounded = true;
       TEX.front[i] = f;
       TEX.back[i] = b;
     };
@@ -124,8 +132,7 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key
   ctx.save();
   ctx.setTransform(ex*2/TS, ey*2/TS, fx*2/TS, fy*2/TS, p0[0], p0[1]);
   if (SHATTER <= 0){
-    roundRectPath(ctx, w, hh, TS*0.07);
-    ctx.clip();
+    if (!img.rounded){ roundRectPath(ctx, w, hh, TS*0.07); ctx.clip(); }
     ctx.drawImage(img, -w/2, -hh/2, w, hh);
   } else {
     /* twelve shards per poster, flung outward from the poster's centre */
