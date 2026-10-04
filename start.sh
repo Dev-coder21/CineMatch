@@ -29,10 +29,10 @@ ok "Java 17 ($JAVA_HOME)"
 if [[ ! -x .venv/bin/python ]]; then
   say "Creating .venv and installing Python packages (first run only)…"
   python3 -m venv .venv
-  .venv/bin/pip install -q -r requirements.txt
+  .venv/bin/python -m pip install -q -r requirements.txt
 fi
 .venv/bin/python -c "import fastapi, uvicorn, pyspark, pymongo, dotenv" 2>/dev/null \
-  || { say "Installing missing Python packages…"; .venv/bin/pip install -q -r requirements.txt; }
+  || { say "Installing missing Python packages…"; .venv/bin/python -m pip install -q -r requirements.txt; }
 ok "Python environment (.venv)"
 
 # ---------------------------------------------------------------- TMDB token
@@ -83,7 +83,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 say "Starting the API (Spark loads the ALS model; this takes ~20 s)…"
-.venv/bin/uvicorn backend.main:app --port "$API_PORT" > .api.log 2>&1 &
+.venv/bin/python -m uvicorn backend.main:app --port "$API_PORT" > .api.log 2>&1 &
 PIDS+=($!)
 for _ in $(seq 1 120); do
   curl -sf "http://127.0.0.1:$API_PORT/" >/dev/null && break
