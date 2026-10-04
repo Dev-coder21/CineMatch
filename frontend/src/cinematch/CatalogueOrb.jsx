@@ -73,18 +73,40 @@ function posterCard(img, movie) {
   return c.toDataURL("image/jpeg", 0.86);
 }
 
+/* hand control back to the browser between cards, so building all 96 never
+   holds up a frame while the page is scrolling */
+const yieldToFrame = () => new Promise((r) => {
+  if (typeof requestIdleCallback === "function") requestIdleCallback(() => r(), { timeout: 120 });
+  else setTimeout(r, 0);
+});
+
 async function buildTiles() {
   const posters = await loadPosterMap();
   const list = films(posters);
-  return Promise.all(list.map(async (m) => {
-    const url = posters[m.id];
-    const img = url ? await loadImage(url) : null;
-    if (img) {
-      try { return posterCard(img, m); } catch { /* tainted or failed: fall back */ }
+  const images = await Promise.all(list.map((m) => (posters[m.id] ? loadImage(posters[m.id]) : null)));
+  const tiles = [];
+  for (let i = 0; i < list.length; i++) {
+    if (i % 4 === 0) await yieldToFrame();
+    let tile = null;
+    if (images[i]) {
+      try { tile = posterCard(images[i], list[i]); } catch { /* tainted or failed: fall back */ }
     }
-    return lobbyCardDataURI(m);
-  }));
+    tiles.push(tile || lobbyCardDataURI(list[i]));
+  }
+  return tiles;
 }
+
+/* the sphere only renders while it is on screen: the page posts
+   {cinematch: "orb", on} and the loop sleeps until it is woken again */
+const PAUSE_HOOK = `let ORB_ON=true;
+window.addEventListener('message',e=>{
+  if(!e.data||e.data.cinematch!=='orb')return;
+  const was=ORB_ON; ORB_ON=!!e.data.on;
+  if(ORB_ON&&!was){ prev=performance.now(); requestAnimationFrame(tick); }
+});
+function tick(now){
+  if(!ORB_ON)return;
+  requestAnimationFrame(tick);`;
 
 function buildDocument(tiles) {
   const hideChrome = `<style data-cinematch>
@@ -95,44 +117,64 @@ function buildDocument(tiles) {
     .replace(TILE_BLOCK, `const TILE_SRC=${JSON.stringify(tiles)};`)
     .replace("Drag to spin &middot; hover a screen", "Drag to spin &middot; hover a film")
     .replace("const AUTO=Math.PI*2/20;", "const AUTO=Math.PI*2/48;")
+    .replace("function tick(now){\n  requestAnimationFrame(tick);", PAUSE_HOOK)
+    /* decode each card off the main thread before it is drawn into the atlas,
+       so booting the sphere is not one long blocking frame */
+    .replace("const im=new Image(); im.onload=()=>res(im);", "const im=new Image(); im.onload=()=>(im.decode?im.decode().catch(()=>{}):Promise.resolve()).then(()=>res(im));")
     .replace("</head>", `${hideChrome}</head>`);
 }
 
-export function CatalogueOrb() {
+export function CatalogueOrb({ warm = true }) {
   const host = useRef(null);
-  const [visible, setVisible] = useState(false);
+  const frame = useRef(null);
+  const visible = useRef(false);
+  const [near, setNear] = useState(false);
   const [source, setSource] = useState(null);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    const el = host.current;
-    if (!el || typeof IntersectionObserver === "undefined") { setVisible(true); return undefined; }
-    const io = new IntersectionObserver(([e]) => setVisible(e?.isIntersecting ?? true), { rootMargin: "600px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  /* build the 96 cards only once the sphere is about to scroll into view,
-     so the page never pays for it during the intro or the first screen */
+  /* build the 96 cards in idle time once `warm` (the intro has gone), or sooner
+     if the sphere is about to scroll into view, and build them only once */
   const started = useRef(false);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => {
-    if (!visible || started.current) return;
-    started.current = true;
-    buildTiles().then((tiles) => { if (mounted.current) setSource(buildDocument(tiles)); });
-  }, [visible]);
+    const start = () => {
+      if (started.current) return;
+      started.current = true;
+      buildTiles().then((tiles) => { if (mounted.current) setSource(buildDocument(tiles)); });
+    };
+    if (near) { start(); return undefined; }
+    if (!warm) return undefined;
+    const t = setTimeout(start, 1500);
+    return () => clearTimeout(t);
+  }, [near, warm]);
 
-  useEffect(() => { if (!visible) setReady(false); }, [visible]);
+  /* once built, the frame stays mounted: it is paused off screen and woken on
+     the way back, so scrolling past it never rebuilds the sphere */
+  const post = (on) => frame.current?.contentWindow?.postMessage({ cinematch: "orb", on }, "*");
+  useEffect(() => {
+    const el = host.current;
+    if (!el || typeof IntersectionObserver === "undefined") { setNear(true); visible.current = true; return undefined; }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) setNear(true);
+        visible.current = e.isIntersecting;
+        post(e.isIntersecting);
+      });
+    }, { rootMargin: "300px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   return (
     <div ref={host} className="threeui-background orb-gallery" style={{ position: "relative", overflow: "hidden", background: "#000", width: "100%", height: "100%" }}>
-      {visible && source && (
+      {source && (
         <iframe
+          ref={frame}
           title="The MovieLens catalogue"
           srcDoc={source}
           sandbox="allow-scripts"
-          onLoad={() => setReady(true)}
+          onLoad={() => { setReady(true); post(visible.current); }}
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, display: "block", background: "#000", opacity: ready ? 1 : 0, transition: "opacity 400ms ease-out" }}
         />
       )}

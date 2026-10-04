@@ -48,11 +48,16 @@ let introSeen = false;
 function Intro({ onReveal, onDone }) {
   const [launching, setLaunching] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [stopped, setStopped] = useState(false);
   const enter = useCallback(() => setLaunching(true), []);
+  /* fade out over the home page, stop the ring once it's invisible, and only
+     tear the intro down after the home page has finished rising in, so the
+     teardown never lands in the middle of an animation */
   const launched = useCallback(() => {
     setLeaving(true);
     onReveal();
-    setTimeout(onDone, 560);
+    setTimeout(() => setStopped(true), 520);
+    setTimeout(onDone, 1300);
   }, [onReveal, onDone]);
 
   useEffect(() => {
@@ -67,7 +72,7 @@ function Intro({ onReveal, onDone }) {
 
   return (
     <section className={`bc-intro${launching ? " is-launching" : ""}${leaving ? " is-leaving" : ""}`} aria-label="Stop scrolling, start watching">
-      <PosterRingIntro launching={launching} onEnter={enter} onLaunched={launched} />
+      <PosterRingIntro launching={launching} stopped={stopped} onEnter={enter} onLaunched={launched} />
       <div className="bc-intro__hud">
         <span className="bc-corner is-tl" /><span className="bc-corner is-tr" />
         <span className="bc-corner is-bl" /><span className="bc-corner is-br" />
@@ -130,7 +135,7 @@ function HowItWorks() {
   );
 }
 
-function Catalogue() {
+function Catalogue({ warm }) {
   return (
     <section className="bc-orb" id="catalogue" aria-labelledby="catalogue-title">
       <div className="bc-orb__head" data-reveal>
@@ -138,7 +143,7 @@ function Catalogue() {
         <p>Every one has its own ten-number taste fingerprint, and every viewer is matched against all of them.</p>
       </div>
       <div className="bc-orb__stage" data-reveal="scale">
-        <CatalogueOrb />
+        <CatalogueOrb warm={warm} />
       </div>
     </section>
   );
@@ -192,7 +197,7 @@ export default function HomePage() {
           <StartHero />
         </div>
         <HowItWorks />
-        <Catalogue />
+        <Catalogue warm={!intro} />
         <Finale />
       </main>
       <Signature />

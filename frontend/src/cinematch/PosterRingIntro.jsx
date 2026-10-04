@@ -14,7 +14,9 @@ import { loadPosterMap } from "./posters.js";
  *   - posters always read upright and unmirrored
  *   - the ring turns slowly at rest and a little faster under the pointer
  *   - "launch" plays a three-part exit, then tells the page to cut to home:
- *       0.0-1.6 s  the ring whirls up to ~60x speed
+ *       0.0-1.6 s  the ring whirls up to ~30x speed (any faster and, at
+ *                  60 Hz, a poster moves more than half the gap to the next
+ *                  each frame, so the ring strobes instead of spinning)
  *       1.2-2.4 s  it rushes toward the screen as the headline swells and fades
  *       2.2-3.1 s  every poster shatters into twelve shards that fly apart
  */
@@ -27,7 +29,7 @@ var A0 = RING.a, D0 = RING.dist, T0 = RING.tile, HEAD_ALPHA = 1, HEAD_SCALE = 1,
 function ease(t){ t = Math.max(0, Math.min(1, t)); return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
 function launchStep(now){
   var lt = (now - LAUNCH_T0) / 1000;
-  LAUNCH_RATE = 1 + 60 * ease(lt / 1.6);
+  LAUNCH_RATE = 1 + 29 * ease(lt / 1.6);
   var k = ease((lt - 1.2) / 1.2);
   RING.dist = D0 * (1 - 0.6 * k);
   RING.a = A0 * (1 + 0.9 * k);
@@ -54,6 +56,8 @@ function drawHead(){
 }
 window.addEventListener('message', function(e){
   if (e.data && e.data.cinematch === 'launch' && !LAUNCH){ LAUNCH = 1; LAUNCH_T0 = performance.now(); settled = false; }
+  /* the page has faded us out: stop drawing so the home page has every frame */
+  if (e.data && e.data.cinematch === 'stop') playing = false;
 });
 /* the canvas measures its frame when the script starts; if the frame was
    still 0 px or mid-layout at that moment the ring and headline would be
@@ -187,7 +191,7 @@ async function pickPosters() {
   return chosen.map((m) => map[m.id] || posterDataURI(m));
 }
 
-export function PosterRingIntro({ launching, onEnter, onLaunched }) {
+export function PosterRingIntro({ launching, stopped = false, onEnter, onLaunched }) {
   const frame = useRef(null);
   const [source, setSource] = useState(null);
   const [ready, setReady] = useState(false);
@@ -211,6 +215,10 @@ export function PosterRingIntro({ launching, onEnter, onLaunched }) {
   useEffect(() => {
     if (launching) frame.current?.contentWindow?.postMessage({ cinematch: "launch" }, "*");
   }, [launching]);
+
+  useEffect(() => {
+    if (stopped) frame.current?.contentWindow?.postMessage({ cinematch: "stop" }, "*");
+  }, [stopped]);
 
   return source ? (
     <iframe

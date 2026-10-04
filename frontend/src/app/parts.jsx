@@ -122,7 +122,9 @@ export function SparsityMatrix() {
     if (!c) return;
     const box = c.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    c.width = Math.round(box.width * dpr); c.height = Math.round(box.height * dpr);
+    /* resizing a canvas reallocates it, so only do that when the size changed */
+    const w = Math.round(box.width * dpr), h = Math.round(box.height * dpr);
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
     const x = c.getContext("2d");
     const cw = c.width / COLS, ch = c.height / ROWS;
     const filled = 1 - Math.pow(1 - 0.17, k);
