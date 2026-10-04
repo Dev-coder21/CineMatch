@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CineMatch: Start full stack",
+      "detail": "MongoDB + FastAPI/Spark ALS + React site, then opens the browser",
+      "type": "shell",
+      "command": "./start.sh",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": { "regexp": "^__never__$" },
+        "background": { "activeBegins": true, "beginsPattern": "Java 17", "endsPattern": "CineMatch is running" }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "CineMatch: Build site",
+      "type": "shell",
+      "command": "npm --prefix frontend run build",
+      "problemMatcher": []
+    }
+  ]
+}

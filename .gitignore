@@ -6,3 +6,7 @@ __pycache__/
 *.bak
 .DS_Store
 frontend/dist/
+
+# start.sh logs
+.api.log
+.web.log

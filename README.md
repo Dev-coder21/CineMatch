@@ -229,6 +229,20 @@ npm install
 
 ## 🖥️ Running the Project
 
+### Quick start (one command)
+
+From the project root:
+
+```bash
+./start.sh
+```
+
+It checks Java 17, the Python `.venv`, MongoDB (starting and seeding it if needed) and the frontend packages, starts the FastAPI + Spark API and the React site, warms up the model, and opens the browser. Press **Ctrl+C** to stop everything.
+
+In **Antigravity / VS Code**: press **Cmd+Shift+B** (or *Terminal → Run Task → CineMatch: Start full stack*).
+
+The site reaches the API through Vite's `/api` proxy (`frontend/vite.local.config.js`), so it works whichever port it lands on. The manual steps below still work too.
+
 ### Start the FastAPI Backend
 
 From the project root (with `.venv` activated):
