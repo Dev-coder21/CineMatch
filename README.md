@@ -9,6 +9,11 @@
 
 **CineMatch** is an end-to-end, full-stack movie recommendation platform. It leverages **Apache Spark ALS (Alternating Least Squares)** collaborative filtering to compute personalized movie suggestions on the **MovieLens 1M** dataset, falls back dynamically to popularity metrics for cold-start users via **MongoDB**, enriches metadata with live poster artwork using the **TMDB API**, and presents recommendations through a sleek, cinematic **React & Tailwind CSS** web application.
 
+> 🌐 **Live site:** **[dev-coder21.github.io/CineMatch](https://dev-coder21.github.io/CineMatch/)**
+
+> 📖 **Comprehensive Project Master Document & Presentation Kit:**  
+> For the complete technical report guide, mathematical derivations, slide-by-slide presentation blueprint, and viva defense Q&A, refer to **[PROJECT_MASTER_DOCUMENT.md](PROJECT_MASTER_DOCUMENT.md)**.
+
 ---
 
 ## 📑 Table of Contents
@@ -28,6 +33,7 @@
 - [Running the Project](#-running-the-project)
 - [Machine Learning Pipeline](#-machine-learning-pipeline)
 - [API Reference](#-api-reference)
+- [Website & Deployment](#-website--deployment)
 - [Author](#-author)
 
 ---
@@ -104,7 +110,7 @@
 ## 📁 Project Structure
 
 ```bash
-movie-recommendation-system/
+CineMatch/
 ├── backend/
 │   ├── main.py                  # FastAPI application entrypoint & routes
 │   ├── recommender.py           # Spark ALS inference & MongoDB fallback logic
@@ -162,8 +168,8 @@ Make sure you have the following installed on your machine:
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/Dev-coder21/movie-recommendation-system.git
-cd movie-recommendation-system
+git clone https://github.com/Dev-coder21/CineMatch.git
+cd CineMatch
 ```
 
 ### 2. Environment Variables
@@ -296,6 +302,34 @@ GET /recommend/{user_id}
   }
 }
 ```
+
+---
+
+## 🌐 Website & Deployment
+
+The live site is a static build of the React app, deployed to **GitHub Pages** by GitHub Actions (`.github/workflows/deploy.yml`) on every push to `main`. No server runs in production: every viewer's picks are precomputed from the trained ALS model.
+
+**How recommendations reach the site**
+
+| Step | Command | Output |
+| --- | --- | --- |
+| Precompute picks for all 6,040 viewers with the same logic as `backend/recommender.py` (top 10 predicted ratings, already-rated films removed, most-rated films for new viewers). Reads `models/als_model` directly, no Spark needed. | `python scripts/export_recommendations.py` | `frontend/public/recommendations.json` |
+| Optional: look up TMDB posters for every film (uses `TMDB_API_TOKEN` from `.env`, which never reaches the frontend). | `python scripts/fetch_posters.py` | `frontend/public/posters.json` |
+
+Re-run the export after retraining the model, commit the JSON, and push: the site redeploys by itself.
+
+**Running the frontend locally**
+
+```bash
+cd frontend
+npm run dev                                   # uses the precomputed picks
+VITE_API_URL=http://127.0.0.1:8000 npm run dev  # or call the live FastAPI backend
+```
+
+**Site structure**
+
+- `#/` — intro (poster ring) and home page: how the model works, the catalogue
+- `#/console?viewer=42` — enter a viewer ID and get their films on the same page
 
 ---
 

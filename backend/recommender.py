@@ -7,7 +7,7 @@ if "JAVA_HOME" not in os.environ or "jdk-26" in os.environ.get("JAVA_HOME", ""):
 from pyspark.sql import SparkSession
 from pyspark.ml.recommendation import ALSModel
 from pymongo import MongoClient
-from backend.tmdb import get_movie_poster
+from backend.tmdb import poster_for
 
 spark = (
     SparkSession.builder
@@ -162,7 +162,7 @@ def recommend_movies(user_id):
             "title": row.title,
             "genres": row.genres,
             "predictedRating": round(float(row.predictedRating), 2),
-            "posterUrl": get_movie_poster(row.title)
+            "posterUrl": poster_for(row.movieId, row.title)
         }
         for row in result
     ]
