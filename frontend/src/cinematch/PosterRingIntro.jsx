@@ -127,7 +127,9 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key
   if (fy < 0){ ex = -ex; ey = -ey; fx = -fx; fy = -fy; }
   if (ex*fy - ey*fx < 0){ ex = -ex; ey = -ey; }
   var list = C[2] > 0 ? TEX.front : TEX.back;
-  var img = list[i % list.length];
+  /* posters arrive one by one, so a slot can still be empty for a moment */
+  var img = list[i % list.length] || TEX.front[i % 12];
+  if (!img) return;
   var w = TS, hh = TS*RING.aspect;
   ctx.save();
   ctx.setTransform(ex*2/TS, ey*2/TS, fx*2/TS, fy*2/TS, p0[0], p0[1]);
