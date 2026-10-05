@@ -68,7 +68,8 @@ fi
 ok "Frontend packages"
 
 # ---------------------------------------------------------------- Ports
-port_busy "$API_PORT" && die "Port $API_PORT is already in use. Stop whatever is running there (or a previous ./start.sh) and try again."
+# if 8000 is taken (another project, or an earlier ./start.sh), use the next free port
+while port_busy "$API_PORT"; do API_PORT=$((API_PORT + 1)); done
 WEB_PORT=5173
 while port_busy "$WEB_PORT"; do WEB_PORT=$((WEB_PORT + 1)); done
 
@@ -98,7 +99,7 @@ say "Warming up the model…"
 curl -sf "http://127.0.0.1:$API_PORT/recommend/1" >/dev/null && ok "Model warm"
 
 # The frontend talks to the API through Vite's /api proxy, so it works on any port.
-VITE_API_URL=/api npm --prefix frontend exec -- vite frontend \
+CINEMATCH_API_PORT="$API_PORT" VITE_API_URL=/api npm --prefix frontend exec -- vite frontend \
   --config frontend/vite.local.config.js --port "$WEB_PORT" --strictPort > .web.log 2>&1 &
 PIDS+=($!)
 for _ in $(seq 1 60); do curl -sf "http://localhost:$WEB_PORT/" >/dev/null && break; sleep 0.5; done

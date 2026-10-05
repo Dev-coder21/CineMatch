@@ -10,7 +10,7 @@ From the repository root:
 
 This one command checks Java 17, the Python `.venv`, MongoDB (starting and seeding it if needed) and the frontend packages, then starts:
 
-- the FastAPI + Spark ALS API on http://127.0.0.1:8000 (docs at `/docs`)
+- the FastAPI + Spark ALS API on http://127.0.0.1:8000, or the next free port (docs at `/docs`)
 - the React site on http://localhost:5173 (or the next free port)
 
 The site calls the API through Vite's `/api` proxy (`frontend/vite.local.config.js`), so it works on any port. Press Ctrl+C to stop both servers. Logs go to `.api.log` and `.web.log`.

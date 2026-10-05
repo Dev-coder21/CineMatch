@@ -7,7 +7,7 @@ import base from './vite.config.js'
 export default mergeConfig(base, defineConfig({
   server: {
     proxy: {
-      '/api': { target: 'http://127.0.0.1:8000', rewrite: (p) => p.replace(/^\/api/, '') },
+      '/api': { target: `http://127.0.0.1:${process.env.CINEMATCH_API_PORT || 8000}`, rewrite: (p) => p.replace(/^\/api/, '') },
     },
   },
 }))
