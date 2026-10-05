@@ -268,7 +268,7 @@
 }
 .bc-how__intro { position: sticky; top: 96px; }
 .bc-how__intro h2 {
-  font-size: clamp(44px, 6.4vw, 104px); line-height: .9; font-weight: 900; letter-spacing: -.035em;
+  font-size: clamp(44px, 6.4vw, 104px); line-height: .96; font-weight: 900; letter-spacing: -.035em;
   font-stretch: 62%; font-variation-settings: "wdth" 62;
   text-wrap: balance;
 }
@@ -318,7 +318,7 @@
   display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 32px; align-items: end;
 }
 .bc-orb__head h2 {
-  font-size: clamp(40px, 6vw, 96px); line-height: .9; font-weight: 900; letter-spacing: -.035em;
+  font-size: clamp(40px, 6vw, 96px); line-height: .96; font-weight: 900; letter-spacing: -.035em;
   font-stretch: 62%; font-variation-settings: "wdth" 62; text-wrap: balance;
 }
 .bc-orb__head p { color: var(--dim); font-size: 17px; max-width: 38ch; }
@@ -392,7 +392,8 @@
 .bc-results__head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 40px; align-items: end; margin-bottom: 28px; }
 .bc-results__head h1, .bc-results__title {
   grid-column: 1 / -1; padding-top: .06em;
-  font-size: clamp(56px, 9vw, 140px); font-weight: 900; line-height: .86; letter-spacing: -.045em;
+  /* 11vw on phones so the longest single word ("Something") still fits; 9vw from tablets up, as before */
+  font-size: clamp(34px, max(9vw, min(11vw, 56px)), 140px); font-weight: 900; line-height: .96; letter-spacing: -.045em;
   font-stretch: 125%; font-variation-settings: "wdth" 125;
 }
 .bc-results__head p { color: var(--dim); max-width: 46ch; font-size: 16px; }
@@ -485,6 +486,9 @@
   .bc-ticker__run, .bc-rec i, .bc-wordmark svg .is-off, .bc-nosignal.is-tuning h1, .bc-nosignal.is-tuning h2 { animation: none; }
 }
 
+/* big headlines use line-height .96: the tightest that keeps a descender
+   (y, g) clear of the ascenders (d, f, l) on the line below */
+
 /* ===================================================================== intro */
 .bc.has-intro .bc-top { opacity: 0; pointer-events: none; }
 .bc.has-intro .bc-home__inner { opacity: 0; }
@@ -511,7 +515,7 @@
 }
 .bc-home__inner { width: 100%; }
 .bc-home__title {
-  font-size: clamp(56px, 10.5vw, 176px); font-weight: 900; line-height: .84; letter-spacing: -.045em;
+  font-size: clamp(56px, 10.5vw, 176px); font-weight: 900; line-height: .96; letter-spacing: -.045em;
   font-stretch: 62%; font-variation-settings: "wdth" 62; max-width: 11ch; text-wrap: balance;
 }
 .bc .bc-home__lede { margin: 36px 0 44px; max-width: 46ch; color: var(--dim); font-size: clamp(16px, 1.3vw, 19px); }
@@ -600,6 +604,9 @@
   .bc-index button:not(.is-on):hover::before { height: 0; }
 }
 
+/* the finale's resting stagger: "watching" sits indented under "Start" */
+.bc-finale__line:last-child { margin-left: 7vw; }
+
 /* ===================================================================== scroll reveals
    Replays in both directions: in when an element enters, out when it
    leaves; elements that left past the top come back in from above. */
@@ -623,8 +630,10 @@
    browser's compositor, so they stay smooth. They use the separate
    translate / scale properties, so they never fight the reveals above. */
 @supports (animation-timeline: view()) {
-  .bc-par { animation: bc-drift linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
-  @keyframes bc-drift { from { translate: 0 60px; } to { translate: 0 -60px; } }
+  /* the heading drifts together with its paragraph, so the two never collide */
+  .bc-how__intro, .bc-orb__head { animation: bc-drift linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+  @keyframes bc-drift { from { translate: 0 32px; } to { translate: 0 -32px; } }
+  .bc-orb__head { position: relative; z-index: 1; }
 
   .bc-ticker__track { animation: bc-band linear both; animation-timeline: scroll(root); animation-range: 0 100vh; }
   @keyframes bc-band { to { translate: -12vw 0; } }
@@ -632,8 +641,10 @@
   .bc-orb__stage { animation: bc-zoom linear both; animation-timeline: view(); animation-range: entry 0% cover 50%; }
   @keyframes bc-zoom { from { scale: .82; } to { scale: 1; } }
 
-  .bc-finale__line:first-child { animation: bc-slide-r linear both; animation-timeline: view(); animation-range: entry 0% cover 60%; }
-  .bc-finale__line:last-child { animation: bc-slide-l linear both; animation-timeline: view(); animation-range: entry 0% cover 60%; }
+  /* finish once the lines are fully on screen: the page can end before
+     "cover 60%" on phones, which left "Start" stuck half off the edge */
+  .bc-finale__line:first-child { animation: bc-slide-r linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+  .bc-finale__line:last-child { animation: bc-slide-l linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
   @keyframes bc-slide-r { from { translate: -14vw 0; } to { translate: 0 0; } }
   @keyframes bc-slide-l { from { translate: 14vw 0; } to { translate: 0 0; } }
 
@@ -648,7 +659,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   [data-reveal], [data-reveal].is-in { opacity: 1; transform: none; transition: none; }
-  .bc-par, .bc-ticker__track, .bc-orb__stage, .bc-finale__line, .bc-spec dd, .bc-home__title, .bc-reel { animation: none !important; }
+  .bc-how__intro, .bc-orb__head, .bc-ticker__track, .bc-orb__stage, .bc-finale__line, .bc-spec dd, .bc-home__title, .bc-reel { animation: none !important; }
 }
 
 /* ===================================================================== scroll rail

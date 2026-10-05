@@ -10,3 +10,4 @@ frontend/dist/
 # start.sh logs
 .api.log
 .web.log
+.start.log
