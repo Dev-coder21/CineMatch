@@ -44,11 +44,11 @@ export function Results({ state }) {
   return (
     <div className="bc-results">
       <header className="bc-results__head" data-reveal>
-        <h2 className="bc-results__title">{personal ? `Viewer ${state.userId}` : "New viewer"}</h2>
+        <h2 className="bc-results__title">{state.title || (personal ? `Viewer ${state.userId}` : "New viewer")}</h2>
         <p>
-          {personal
+          {state.lede || (personal
             ? `${movies.length === 10 ? "Ten" : movies.length} films the model expects this viewer to rate highest, best first. Anything they've already rated is left out.`
-            : `Viewer ${state.userId} isn't in MovieLens yet, so here are the ten most-rated films to start with.`}
+            : `Viewer ${state.userId} isn't in MovieLens yet, so here are the ten most-rated films to start with.`)}
         </p>
         <GenreStrip movies={movies} />
       </header>
